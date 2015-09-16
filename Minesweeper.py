@@ -1,147 +1,182 @@
-from random import randint
+"""
+Minesweeper Game
+developed with python
+"""
+
 import random
 
+
 class Cell(object):
-	
-	isOpen = False
-	value = 0
-	def __init__(self, row, column):
+    """
+    This class contains properties of a cell object.
+    Each cell has a row and column value.
+    Value is the count of the cells which are neighbours of this cell contain bombs
+    """
 
-		self.row = row
-		self.column = column
+    is_open = False
+    value = 0
 
-		
+    def __init__(self, row, column):
+        self.row = row
+        self.column = column
+
+
 class MineSweeper(object):
-		
-	row_size = 0
-	column_size = 0
-	bomb_number = 0
-	cells = []
+    """
+    Game class with game controls and operations.
+    """
 
-	#Initiliaze game
-	def __init__(self, row, column, difficulty):
+    row_size = 0
+    column_size = 0
+    bomb_count = 0
+    cells = []
 
-		self.row_size = row
-		self.column_size = column
-		for i in range(1,(column+1)):
-			for j in range(1, (row+1)):
-				self.cells.append(Cell(i, j))				
-	
-		if difficulty == "Easy":
+    # Initialize game
+    def __init__(self, row, column, difficulty):
 
-			if row * column < 30:			
-				self.bomb_number = 5						
-			elif row * column < 100:
-				self.bomb_number = 10			
-			else:
-				self.bomb_number = 15		
-		
-		elif difficulty == "Medium":
+        self.row_size = row
+        self.column_size = column
+        for i in range(1, (column + 1)):
+            for j in range(1, (row + 1)):
+                self.cells.append(Cell(i, j))
+        if difficulty == "Easy":
+            if row * column < 30:
+                self.bomb_count = 5
+            elif row * column < 100:
+                self.bomb_count = 10
+            else:
+                self.bomb_count = 15
+        elif difficulty == "Medium":
+            if row * column < 30:
+                self.bomb_count = 10
+            elif row * column < 100:
+                self.bomb_count = 15
+            else:
+                self.bomb_count = 20
+        elif difficulty == "Hard":
+            if row * column < 30:
+                self.bomb_count = 15
+            elif row * column < 100:
+                self.bomb_count = 20
+            else:
+                self.bomb_count = 30
+        else:
+            raise Exception("Your level input is wrong!")
 
-			if row * column < 30:
-				self.bomb_number = 10	
-			elif row * column < 100:
-				self.bomb_number = 15	
-			else:
-				self.bomb_number = 20
+    def game_over_control(self):
+        """
+        Detects if the game is over or not.
+        If closed cell count is equal to the bomb count, player wins.
+        :return:True if player wins. False if the game continues.
+        """
+        count = 0
+        for cell in self.cells:
+            if cell.is_open is False:
+                count += 1
+        if count == self.bomb_count:
+            return True
+        else:
+            return False
 
-		elif difficulty == "Hard":	
+    def game_flow(self):
+        """
+        Controls the main game flow
+        :return: None
+        """
+        game_end = False
+        score = 04
+        self.print_field()
+        while game_end is False:
+            print "\n"
+            print "Choose row and then column (Example: 5 4): "
+            user_row, user_column = int(raw_input()), int(raw_input())
+            if self.cells[self.row_size * (user_row - 1) + (user_column - 1)].is_open is False:
+                if self.cells[self.row_size * (user_row - 1) + (user_column - 1)].value == 99:
+                    game_end = True
+                    print "\n"
+                    print "Bomb! Game is over"
+                    print "Your score is: %r" % score
+                    self.open_field()
+                else:
+                    self.cells[self.row_size * (user_row - 1) + (user_column - 1)].is_open = True
+                    score += 5
+                    if self.game_over_control() is False:
+                        self.print_field()
+                    else:
+                        game_end = True
+                        print "\n"
+                        print "Congratulations! You win!"
+                        print "Your score is: %r" % score
+                        self.open_field()
 
-			if row * column < 30:
-				self.bomb_number = 15
-			elif row * column < 100:
-				self.bomb_number = 20		
-			else:
-				self.bomb_number = 30
+    def print_field(self):
+        """
+        Prints the cells to the screen.
+        :return: None
+        """
+        print ("\n"),
+        for index, cell in enumerate(self.cells):
+            if index % self.row_size is 0:
+                print ("\n"),
+            if cell.is_open is True:
+                print ("%s \t" % cell.value),
+            else:
+                print "X \t",
 
-		else:
-			raise Exception("Your level input is wrong!")	
+    def open_field(self):
+        """
+        Opens all of the cells' values and prints them to the console.
+        :return: None
+        """
+        for index, cell in enumerate(self.cells):
+            if index % self.row_size is 0:
+                print ("\n"),
+            print ("%s \t" % cell.value),
+        print "\n"
 
-			
-	#Prints field of the game.
-	def print_field(self):
+    def insert_mines(self):
+        """
+        Insert specified number of mines into the area, increase values of its neighbour cells.
+        :return: None
+        """
+        bomb_position = random.sample(range(0, (self.row_size * self.column_size) - 1),
+                                      self.bomb_count)
+        for bomb in bomb_position:
+            self.cells[int(bomb)].value = 99
+        for located_bomb in bomb_position:
+            neighbour_list = []
+            # except right corner
+            if (located_bomb+1) % self.row_size != 0:
+                neighbour_list.append(located_bomb+1)
+                neighbour_list.append(located_bomb+self.row_size+1)
+                neighbour_list.append(located_bomb-self.row_size+1)
+            # except left corner
+            if located_bomb % self.row_size != 0:
+                neighbour_list.append(located_bomb-1)
+                neighbour_list.append(located_bomb+self.row_size-1)
+                neighbour_list.append(located_bomb-self.row_size-1)
+            # all fields
+            neighbour_list.append(located_bomb+self.row_size)
+            neighbour_list.append(located_bomb-self.row_size)
+            # increase proper neighbours one
+            for neighbour in neighbour_list:
+                if -1 < neighbour < len(self.cells):
+                    if self.cells[neighbour].value != 99:
+                        self.cells[neighbour].value += 1
 
-		gameEnd = False
-		score = 0
-		self.repeat_field()
-		while gameEnd == False:
-			print("\n"),
-			print "Choose column and row(Ex: 5 4): "
-			user_row, user_column = int(raw_input()), int(raw_input())
-			if(self.cells[self.row_size * (user_row-1) + (user_column-1)].isOpen) == False:
-				if self.cells[self.row_size * (user_row-1) + (user_column-1)].value == 99:
-					gameEnd = True
-					print("\n"),
-					print "Bomba! Game is over"
-					print "Your score is: %r" %score				
-					self.open_field()
-				else:
-					self.cells[self.row_size * (user_row-1) + (user_column-1)].isOpen = True
-					score += 5
-					self.repeat_field()	
 
-	def repeat_field(self):
-		
-		print("\n"),
-		for k,v in enumerate(self.cells):			
-			if k % self.row_size is 0:
-				print("\n"),
-			if v.isOpen == True:
-				print("%s \t" %v.value),
-			else:		
-				print "X \t",
-
-	def open_field(self):
-		for k,v in enumerate(self.cells):			
-			if k % self.row_size is 0:
-				print("\n"),	
-			print("%s \t" %v.value),		
-
-		print "\n"				
-
-	#Insert specified number of mines into the area, increase numbers of its neigbours.
-	def insert_mines(self):
-		
-		bomb_position = random.sample(range(0,	
-					    (self.row_size*self.column_size)-1), self.bomb_number)
-		
-		for bomb in bomb_position:
-			self.cells[bomb].value = 99
-
-		for locatedBomb in bomb_position:
-			neigbourlist = []
-			#except right corner
-			if (locatedBomb+1) % self.row_size != 0:
-				neigbourlist.append(locatedBomb+1) 
-				neigbourlist.append(locatedBomb+self.row_size+1)
-				neigbourlist.append(locatedBomb-self.row_size+1)
-			#except left corner	
-			if locatedBomb % self.row_size != 0:	
-				neigbourlist.append(locatedBomb-1)
-				neigbourlist.append(locatedBomb+self.row_size-1)  		 	
-				neigbourlist.append(locatedBomb-self.row_size-1)
-			
-			#all fields
-			neigbourlist.append(locatedBomb+self.row_size)
-			neigbourlist.append(locatedBomb-self.row_size)
-			
-			#increase proper neighbours one
-			for neigbour in neigbourlist:
-				if neigbour > -1 and neigbour < len(self.cells):
-					if self.cells[neigbour].value != 99:
-						self.cells[neigbour].value += 1
-#Testing class
-
-print "Welcome to minesweeper game!"
-print "Enter row number: " 
-row = int(raw_input())
-print "Enter column number: " 
-column = int(raw_input())
-print "Choose your level: Easy / Medium / Hard "
-difficulty=raw_input()
-try:
-	Game= MineSweeper(row, column, difficulty)
-	Game.insert_mines()		
-	Game.print_field()
-except Exception as e:
-	print e
+# Testing
+if __name__ == "__main__":
+    print "Welcome to minesweeper game!"
+    print "Enter column number: "
+    ROW_NUMBER = int(raw_input())
+    print "Enter row number: "
+    COLUMN_NUMBER = int(raw_input())
+    print "Choose your level: Easy / Medium / Hard "
+    DIFFICULTY_LEVEL = raw_input()
+    try:
+        GAME = MineSweeper(ROW_NUMBER, COLUMN_NUMBER, DIFFICULTY_LEVEL)
+        GAME.insert_mines()
+        GAME.game_flow()
+    except Exception as exc:
+        print exc
